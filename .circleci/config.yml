@@ -49,10 +49,7 @@ jobs:
             at: ~/repo/
       - run:
             name: Deploy over SSH to whatbox
-            command: |
-              pwd
-              ls -lsh
-              scp ./toi-scraper $SSH_USER@$SSH_HOST:/home/shyamsundar2007/bin/
+            command: scp ./toi-scraper $SSH_USER@$SSH_HOST:/home/shyamsundar2007/bin/
 workflows:
   build-and-deploy:
     jobs:
