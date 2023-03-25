@@ -1,10 +1,14 @@
 version: 2.1
 
-jobs:
-  build:
-    working_directory: ~/repo
+executors:
+  go-executor:
     docker:
       - image: cimg/go:1.20.2
+    working_directory: ~/repo/toi-scraper-go
+
+jobs:
+  build:
+    executor: go-executor
     steps:
       - checkout
       - restore_cache:
@@ -20,14 +24,15 @@ jobs:
       - run:
           name: Build the go program
           command: go build
+      - persist_to_workspace:
+          root: ~/repo
+          paths:
+            - toi-scraper-go
   test:
-    working_directory: ~/repo
-    docker:
-      - image: cimg/go:1.20.2
+    executor: go-executor
     steps:
-      - run:
-          name: Check folder
-          command: ls -lsh
+      - attach_workspace:
+          at: ~/repo/
       - run:
           name: Run tests
           command: |
@@ -37,13 +42,17 @@ jobs:
           path: /tmp/test-reports
   deploy:
     machine:
-      enabled: true
+      image: "ubuntu-2004:current"
+    working_directory: ~/repo/toi-scraper-go
     steps:
+      - attach_workspace:
+            at: ~/repo/
       - run:
             name: Deploy over SSH to whatbox
             command: |
-              ssh $SSH_USER@$SSH_HOST "cp ./toi-scraper /home/shyamsundar2007/personal/"
-
+              pwd
+              ls -lsh
+              scp ./toi-scraper $SSH_USER@$SSH_HOST:/home/shyamsundar2007/bin/
 workflows:
   build-and-deploy:
     jobs:
