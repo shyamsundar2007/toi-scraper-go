@@ -10,6 +10,7 @@ import (
 	"shyam/toi-scraper/db"
 	"shyam/toi-scraper/notify"
 	"shyam/toi-scraper/toi_api"
+	"strconv"
 )
 
 type defaultHTTPClient struct{}
@@ -95,7 +96,17 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	var notifier notify.Notify = notify.NewTelegramNotifier(bot, -939564132)
+	chatIdStr := os.Getenv("TOI_CHAT_ID")
+	if chatIdStr == "" {
+		log.Error("Unable to find TOI Chat ID")
+		panic(chatIdStr)
+	}
+	// -939564132
+	chatId, err := strconv.ParseInt(chatIdStr, 10, 64)
+	if err != nil {
+		panic(err)
+	}
+	var notifier notify.Notify = notify.NewTelegramNotifier(bot, chatId)
 	if moviesToNotify != nil && len(moviesToNotify) != 0 {
 		err := notifier.Notify(moviesToNotify)
 		if err != nil {

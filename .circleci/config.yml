@@ -50,6 +50,30 @@ jobs:
       - run:
             name: Deploy over SSH to whatbox
             command: scp ./toi-scraper $SSH_USER@$SSH_HOST:/home/shyamsundar2007/bin/
+      - run:
+            name: Setup env vars
+            command: |
+              if ssh $SSH_USER@$SSH_HOST "grep 'export TELEGRAM_APITOKEN' ~/.zshrc"; then
+                echo 'Overwriting TELEGRAM_APITOKEN to ~/.zshrc'
+                sed_command="s/^export TELEGRAM_APITOKEN=.*/export TELEGRAM_APITOKEN=$TELEGRAM_APITOKEN/"
+                ssh $SSH_USER@$SSH_HOST "sed -i '$sed_command' ~/.zshrc"
+              else
+                echo 'Writing TELEGRAM_APITOKEN to ~/.zshrc'
+                ssh $SSH_USER@$SSH_HOST "echo 'export TELEGRAM_APITOKEN=$TELEGRAM_APITOKEN' >> ~/.zshrc"
+              fi
+              ssh $SSH_USER@$SSH_HOST 'source ~/.zshrc'
+      - run:
+          name: Setup chat ID
+          command: |
+            if ssh $SSH_USER@$SSH_HOST "grep 'export TOI_CHAT_ID' ~/.zshrc"; then
+              echo 'Overwriting TOI_CHAT_ID to ~/.zshrc'
+              sed_command="s/^export TOI_CHAT_ID=.*/export TOI_CHAT_ID=$TOI_CHAT_ID/"
+              ssh $SSH_USER@$SSH_HOST "sed -i '$sed_command' ~/.zshrc"
+            else
+              echo 'Writing TOI_CHAT_ID to ~/.zshrc'
+              ssh $SSH_USER@$SSH_HOST "echo 'export TOI_CHAT_ID=$TOI_CHAT_ID' >> ~/.zshrc"
+            fi
+            ssh $SSH_USER@$SSH_HOST 'source ~/.zshrc'
 workflows:
   build-and-deploy:
     jobs:
