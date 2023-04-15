@@ -75,7 +75,7 @@ func (rating *Rating) ToFloat() (float64, error) {
 	return value, nil
 }
 
-func (toiMovieApi *ToiMovieApi) GetMovieReviews(language Language) ([]MovieReview, error) {
+func (toiMovieApi *ToiMovieApi) GetMovieReviews(language Language) ([]*MovieReview, error) {
 
 	url := languageLinkMap[language]
 	resp, err := toiMovieApi.httpClient.Get(url)
@@ -93,7 +93,7 @@ func (toiMovieApi *ToiMovieApi) GetMovieReviews(language Language) ([]MovieRevie
 		return nil, err
 	}
 
-	var reviews []MovieReview
+	var reviews []*MovieReview
 	doc.Find("#perpetualListingInitial div div.FIL_right").Each(func(i int, s *goquery.Selection) {
 		title := s.Find("a h3").Text()
 		criticRating := s.Find("div div:nth-child(2) span.star_count").Text()
@@ -104,7 +104,7 @@ func (toiMovieApi *ToiMovieApi) GetMovieReviews(language Language) ([]MovieRevie
 			MovieCriticRating: Rating(userRating),
 			Language:          Languages[language],
 		}
-		reviews = append(reviews, movieReview)
+		reviews = append(reviews, &movieReview)
 	})
 	doc.Find("#perpetualListing div div.FIL_right").Each(func(i int, s *goquery.Selection) {
 		title := s.Find("a h3").Text()
@@ -116,7 +116,7 @@ func (toiMovieApi *ToiMovieApi) GetMovieReviews(language Language) ([]MovieRevie
 			MovieCriticRating: Rating(userRating),
 			Language:          Languages[language],
 		}
-		reviews = append(reviews, movieReview)
+		reviews = append(reviews, &movieReview)
 	})
 	return reviews, nil
 }

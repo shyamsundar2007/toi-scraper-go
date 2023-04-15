@@ -11,6 +11,7 @@ import (
 	"shyam/toi-scraper/notify"
 	"shyam/toi-scraper/toi_api"
 	"strconv"
+	"sync"
 )
 
 type defaultHTTPClient struct{}
@@ -44,17 +45,22 @@ func main() {
 		toi_api.Hindi,
 	}
 	var allReviews []toi_api.MovieReview
-	// TODO: use go routines
+	var wg sync.WaitGroup
 	for _, lang := range langs {
-		log.Infof("Getting movie reviews for language %s", toi_api.Languages[lang])
-		toiMovieApi := toi_api.NewToiMovieApi(&defaultHTTPClient{}, &defaultGoQueryClient{})
-		reviews, err := toiMovieApi.GetMovieReviews(lang) // TODO: Update to get movie links/posters
-		if err != nil {
-			panic(err)
-		}
-		allReviews = append(allReviews, reviews...)
-		log.Infof("Retrieved %d movie reviews", len(reviews))
+		wg.Add(1)
+		go func(lang toi_api.Language) {
+			defer wg.Done()
+			reviews, err := getReviews(lang)
+			if err != nil {
+				log.Errorf("Error getting reviews for language %v: %v", lang, err)
+				return
+			}
+			for _, review := range reviews {
+				allReviews = append(allReviews, *review)
+			}
+		}(lang)
 	}
+	wg.Wait()
 
 	// check DB
 	movieDb, err := db.OpenDB("tmp/db")
@@ -92,8 +98,10 @@ func main() {
 
 	// notify movies
 	log.Infof("Notifying for %d movies", len(moviesToNotify))
-	bot, err := tgbotapi.NewBotAPI(os.Getenv("TELEGRAM_APITOKEN"))
+	token := os.Getenv("TELEGRAM_APITOKEN")
+	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
+		log.Error("Unable to find TOI API token")
 		panic(err)
 	}
 	chatIdStr := os.Getenv("TOI_CHAT_ID")
@@ -113,6 +121,17 @@ func main() {
 			panic(err)
 		}
 	}
+}
+
+func getReviews(lang toi_api.Language) ([]*toi_api.MovieReview, error) {
+	log.Infof("Getting movie reviews for language %s", toi_api.Languages[lang])
+	toiMovieApi := toi_api.NewToiMovieApi(&defaultHTTPClient{}, &defaultGoQueryClient{})
+	reviews, err := toiMovieApi.GetMovieReviews(lang) // TODO: Update to get movie links/posters
+	if err != nil {
+		return nil, err
+	}
+	log.Infof("Retrieved %d movie reviews for language %s", len(reviews), toi_api.Languages[lang])
+	return reviews, nil
 }
 
 func shouldNotifyMovie(review toi_api.MovieReview) (bool, error) {

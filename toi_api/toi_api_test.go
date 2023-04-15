@@ -55,7 +55,7 @@ func TestToiMovieApi_GetMovieReviews(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want []MovieReview
+		want []*MovieReview
 	}{
 		// TODO: Add test cases.
 		{
