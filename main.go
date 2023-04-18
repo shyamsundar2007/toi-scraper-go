@@ -76,6 +76,7 @@ func main() {
 
 	// check DB
 	movieDb, err := db.OpenDB("tmp/db")
+	var moviesToAdd []toi_api.MovieReview
 	if err != nil {
 		panic(err)
 	}
@@ -83,14 +84,7 @@ func main() {
 	for _, review := range allReviews {
 		// if movie not there, we add it to the DB
 		if !movieDb.Has(review.MovieName) {
-			log.Infof("Adding movie %s to the DB", review.MovieName)
-			err := movieDb.Put(review.MovieName, &db.Movie{
-				UserRating:   db.Rating(review.MovieUserRating),
-				CriticRating: db.Rating(review.MovieCriticRating),
-			})
-			if err != nil {
-				panic(err)
-			}
+			moviesToAdd = append(moviesToAdd, review)
 			shouldNotify, err := shouldNotifyMovie(review)
 			if err != nil {
 				panic(err)
@@ -112,10 +106,9 @@ func main() {
 	log.Infof("Notifying for %d movies", len(moviesToNotify))
 	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
-		log.Error("Unable to find TOI API token")
+		log.Error("Unable to get telegram Bot token")
 		panic(err)
 	}
-
 	// -939564132
 	chatId, err := strconv.ParseInt(chatIdStr, 10, 64)
 	if err != nil {
@@ -124,6 +117,18 @@ func main() {
 	var notifier notify.Notify = notify.NewTelegramNotifier(bot, chatId)
 	if moviesToNotify != nil && len(moviesToNotify) != 0 {
 		err := notifier.Notify(moviesToNotify)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	// Add to DB at last to ensure notifications are not missed
+	for _, movie := range moviesToAdd {
+		log.Infof("Adding movie %s to the DB", movie.MovieName)
+		err := movieDb.Put(movie.MovieName, &db.Movie{
+			UserRating:   db.Rating(movie.MovieUserRating),
+			CriticRating: db.Rating(movie.MovieCriticRating),
+		})
 		if err != nil {
 			panic(err)
 		}
