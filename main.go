@@ -37,6 +37,18 @@ func main() {
 	log.SetFormatter(&log.JSONFormatter{})
 	log.SetLevel(log.DebugLevel)
 
+	// check for env vars
+	token := os.Getenv("TELEGRAM_APITOKEN")
+	if token == "" {
+		log.Error("Unable to find TELEGRAM_APITOKEN")
+		panic(token)
+	}
+	chatIdStr := os.Getenv("TOI_CHAT_ID")
+	if chatIdStr == "" {
+		log.Error("Unable to find TOI_CHAT_ID")
+		panic(chatIdStr)
+	}
+
 	// get movie reviews
 	langs := []toi_api.Language{
 		toi_api.Tamil,
@@ -98,17 +110,12 @@ func main() {
 
 	// notify movies
 	log.Infof("Notifying for %d movies", len(moviesToNotify))
-	token := os.Getenv("TELEGRAM_APITOKEN")
 	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
 		log.Error("Unable to find TOI API token")
 		panic(err)
 	}
-	chatIdStr := os.Getenv("TOI_CHAT_ID")
-	if chatIdStr == "" {
-		log.Error("Unable to find TOI Chat ID")
-		panic(chatIdStr)
-	}
+
 	// -939564132
 	chatId, err := strconv.ParseInt(chatIdStr, 10, 64)
 	if err != nil {
