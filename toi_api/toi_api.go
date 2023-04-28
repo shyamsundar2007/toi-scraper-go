@@ -15,6 +15,7 @@ type MovieReview struct {
 	MovieUserRating   Rating
 	MovieCriticRating Rating
 	Language          string
+	Link              string
 }
 
 type Language int
@@ -33,11 +34,13 @@ var Languages = [...]string{
 	Hindi:     "Hindi",
 }
 
+var baseToiUri = "https://timesofindia.indiatimes.com"
+
 var languageLinkMap = map[Language]string{
-	Tamil:     "https://timesofindia.indiatimes.com/entertainment/tamil/movie-reviews",
-	Telugu:    "https://timesofindia.indiatimes.com/entertainment/telugu/movie-reviews",
-	Malayalam: "https://timesofindia.indiatimes.com/entertainment/malayalam/movie-reviews",
-	Hindi:     "https://timesofindia.indiatimes.com/entertainment/hindi/movie-reviews",
+	Tamil:     baseToiUri + "/entertainment/tamil/movie-reviews",
+	Telugu:    baseToiUri + "/entertainment/telugu/movie-reviews",
+	Malayalam: baseToiUri + "/entertainment/malayalam/movie-reviews",
+	Hindi:     baseToiUri + "/entertainment/hindi/movie-reviews",
 }
 
 type MovieApi interface {
@@ -95,31 +98,31 @@ func (toiMovieApi *ToiMovieApi) GetMovieReviews(language Language) ([]*MovieRevi
 
 	var reviews []*MovieReview
 	doc.Find("#perpetualListingInitial div div.FIL_right").Each(func(i int, s *goquery.Selection) {
-		title := s.Find("a h3").Text()
-		criticRating := s.Find("div div:nth-child(2) span.star_count").Text()
-		userRating := s.Find("div div:nth-child(3) span.star_count").Text()
-		movieReview := MovieReview{
-			MovieName:         title,
-			MovieUserRating:   Rating(criticRating),
-			MovieCriticRating: Rating(userRating),
-			Language:          Languages[language],
-		}
-		reviews = append(reviews, &movieReview)
+		reviews = extractMovieReview(s, language, reviews)
 	})
 	doc.Find("#perpetualListing div div.FIL_right").Each(func(i int, s *goquery.Selection) {
-		title := s.Find("a h3").Text()
-		criticRating := s.Find("div div:nth-child(2) span.star_count").Text()
-		userRating := s.Find("div div:nth-child(3) span.star_count").Text()
-		movieReview := MovieReview{
-			MovieName:         title,
-			MovieUserRating:   Rating(criticRating),
-			MovieCriticRating: Rating(userRating),
-			Language:          Languages[language],
-		}
-		reviews = append(reviews, &movieReview)
+		reviews = extractMovieReview(s, language, reviews)
 	})
 	return reviews, nil
 }
 
+func extractMovieReview(s *goquery.Selection, language Language, reviews []*MovieReview) []*MovieReview {
+	title := s.Find("a h3").Text()
+	link, _ := s.Find("a").First().Attr("href")
+	criticRating := s.Find("div div:nth-child(2) span.star_count").Text()
+	userRating := s.Find("div div:nth-child(3) span.star_count").Text()
+	movieReview := MovieReview{
+		MovieName:         title,
+		MovieUserRating:   Rating(criticRating),
+		MovieCriticRating: Rating(userRating),
+		Language:          Languages[language],
+		Link:              baseToiUri + link,
+	}
+	fmt.Println("Link: " + movieReview.Link)
+	reviews = append(reviews, &movieReview)
+	return reviews
+}
+
 //#perpetualListingInitial > div:nth-child(2) > div.FIL_right > div > div:nth-child(2) > span.star_count
 //#perpetualListing > div:nth-child(3) > div.FIL_right > div > div:nth-child(3) > span.star_count
+////*[@id="perpetualListingInitial"]/div[2]/div[2]/a

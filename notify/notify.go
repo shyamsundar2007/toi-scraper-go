@@ -15,6 +15,7 @@ type Movie struct {
 	UserRating   Rating
 	CriticRating Rating
 	Language     string
+	Link         string
 }
 
 type Notify interface {
@@ -54,14 +55,14 @@ func (tgNotifier *TelegramNotifier) Notify(movies []Movie) error {
 	msgToSend := ""
 	for _, movie := range movies {
 		log.Debugln(movie)
-		msgToSend += fmt.Sprintf("%s (%s)\nCritic: %s\nUser: %s\n--------------------\n",
-			movie.MovieName, movie.Language, movie.CriticRating, movie.UserRating)
+		msgToSend = fmt.Sprintf("TOI Movie Review\n--------------------\n"+
+			"%s (%s)\nCritic: %s\nUser: %s\nLink: %s\n--------------------\n",
+			movie.MovieName, movie.Language, movie.CriticRating, movie.UserRating, movie.Link)
+		msg := tgbotapi.NewMessage(tgNotifier.chatId, msgToSend)
+		if _, err := tgNotifier.tgClient.Send(msg); err != nil {
+			return err
+		}
 	}
 
-	msg := tgbotapi.NewMessage(tgNotifier.chatId, msgToSend)
-
-	if _, err := tgNotifier.tgClient.Send(msg); err != nil {
-		return err
-	}
 	return nil
 }

@@ -69,6 +69,7 @@ func TestToiMovieApi_GetMovieReviews(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			toiMovieApi := NewToiMovieApi(&mockHTTPClient{}, &mockGoQueryClient{})
+			//toiMovieApi := NewToiMovieApi(&defaultHTTPClient{}, &defaultGoQueryClient{})
 			if got, _ := toiMovieApi.GetMovieReviews(tt.args.language); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetMovieReviews() = %v, want %v", got, tt.want)
 			}

@@ -95,6 +95,7 @@ func main() {
 					UserRating:   notify.Rating(review.MovieUserRating),
 					CriticRating: notify.Rating(review.MovieCriticRating),
 					Language:     review.Language,
+					Link:         review.Link,
 				})
 			}
 		} else {
@@ -124,7 +125,8 @@ func main() {
 
 	// Add to DB at last to ensure notifications are not missed
 	for _, movie := range moviesToAdd {
-		log.Infof("Adding movie %s to the DB", movie.MovieName)
+		log.Infof("Adding movie %s to the DB with user rating %s and critic rating %s",
+			movie.MovieName, movie.MovieUserRating, movie.MovieCriticRating)
 		err := movieDb.Put(movie.MovieName, &db.Movie{
 			UserRating:   db.Rating(movie.MovieUserRating),
 			CriticRating: db.Rating(movie.MovieCriticRating),

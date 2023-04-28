@@ -8,10 +8,10 @@ import (
 
 type mockTgClient struct{}
 
-var message string
+var messages []string
 
 func (t mockTgClient) Send(msg tgbotapi.Chattable) (tgbotapi.Message, error) {
-	message = msg.(tgbotapi.MessageConfig).Text
+	messages = append(messages, msg.(tgbotapi.MessageConfig).Text)
 	return tgbotapi.Message{}, nil
 }
 
@@ -27,7 +27,7 @@ func TestTelegramNotifier_Notify(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    string
+		want    []string
 		wantErr bool
 	}{
 		{
@@ -37,7 +37,7 @@ func TestTelegramNotifier_Notify(t *testing.T) {
 				chatId:   0,
 			},
 			args:    args{movies: nil},
-			want:    "",
+			want:    nil,
 			wantErr: true,
 		},
 		{
@@ -52,9 +52,13 @@ func TestTelegramNotifier_Notify(t *testing.T) {
 					UserRating:   Rating("4.0"),
 					CriticRating: Rating("3.5"),
 					Language:     "Tamil",
+					Link:         "someLink",
 				},
 			}},
-			want:    "testMovie (Tamil)\nCritic: 3.5\nUser: 4.0\n--------------------\n",
+			want: []string{
+				"TOI Movie Review\n--------------------\n" +
+					"testMovie (Tamil)\nCritic: 3.5\nUser: 4.0\nLink: someLink\n--------------------\n",
+			},
 			wantErr: false,
 		},
 		{
@@ -69,16 +73,21 @@ func TestTelegramNotifier_Notify(t *testing.T) {
 					UserRating:   Rating("4.0"),
 					CriticRating: Rating("3.5"),
 					Language:     "Tamil",
+					Link:         "someLink",
 				},
 				{
 					MovieName:    "testMovie2",
 					UserRating:   Rating("2.0"),
 					CriticRating: Rating("1.5"),
 					Language:     "Hindi",
+					Link:         "someLink2",
 				},
 			}},
-			want: "testMovie (Tamil)\nCritic: 3.5\nUser: 4.0\n--------------------\n" +
-				"testMovie2 (Hindi)\nCritic: 1.5\nUser: 2.0\n--------------------\n",
+			want: []string{"TOI Movie Review\n--------------------\n" +
+				"testMovie (Tamil)\nCritic: 3.5\nUser: 4.0\nLink: someLink\n--------------------\n",
+				"TOI Movie Review\n--------------------\n" +
+					"testMovie2 (Hindi)\nCritic: 1.5\nUser: 2.0\nLink: someLink2\n--------------------\n",
+			},
 			wantErr: false,
 		},
 	}
@@ -91,9 +100,10 @@ func TestTelegramNotifier_Notify(t *testing.T) {
 			err := tgNotifier.Notify(tt.args.movies)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Notify() error = %v, wantErr %v", err, tt.wantErr)
-			} else if !reflect.DeepEqual(message, tt.want) {
-				t.Errorf("Notify() = %v, want %v", message, tt.want)
+			} else if !reflect.DeepEqual(messages, tt.want) {
+				t.Errorf("Notify() = %v, want %v", messages, tt.want)
 			}
+			messages = nil
 		})
 	}
 }
